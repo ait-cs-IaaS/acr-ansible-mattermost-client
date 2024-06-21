@@ -1,0 +1,37 @@
+---
+- name: Download Mattermost repository setup script
+  ansible.builtin.get_url:
+    url: https://deb.packages.mattermost.com/setup-repo.sh
+    dest: /tmp/setup-repo.sh
+    mode: +x
+
+- name: Run Mattermost repository setup script
+  become: true
+  ansible.builtin.command:
+    cmd: ./setup-repo.sh
+    chdir: /tmp
+  changed_when: false
+
+- name: Update apt repo and install mattermost-desktop
+  become: true
+  ansible.builtin.apt:
+    name: mattermost-desktop
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Ensure config folder is present
+  become: true
+  ansible.builtin.file:
+    path: /home/{{ username }}/.config/Mattermost
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ username }}"
+
+- name: Deploy basic mattermost config
+  become: true
+  ansible.builtin.template:
+    src: mattermost-desktop_config.json.j2
+    dest: /home/{{ username }}/.config/Mattermost/config.json
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    mode: "0664"
